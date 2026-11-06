@@ -45,7 +45,7 @@ window.SITE = {
       place: "Crumbl",
       photos: [{ src: "crumbl.jpg", caption: "" }],
       story:
-        "Shout out Riju, shout out Michelle, shout out Ronit, shout out Anas. Can't believe we actually met at a bakery.",
+        "Shout out Riju, shout out Michelle, shout out Ronit, shout out Anas. The start of a lifetime of memories, without even knowing it.",
       letter: "T",
     },
     {
@@ -62,7 +62,7 @@ window.SITE = {
       date: "June 2023",
       place: "",
       photos: [{ src: "my-prom.jpg", caption: "" }],
-      story: "Your red hair and red dress were perfect.",
+      story: "The red was perfect.",
       letter: "E",
     },
     {
@@ -111,8 +111,7 @@ window.SITE = {
       photos: [],
       story:
         "All the sunsets we got to experience together.\n\n" +
-        "It's been a crazy, long, whirlwind journey loving you and spending life with you for the past {days} days. You've made me the best version of myself I think I ever could have been, and I hope I've brought out even 1% of that in you. I know this year has had its fair share of rough patches, but I would do it all over again if it meant becoming a better person, and a better person for you.\n\n" +
-        "When I see how pretty the sunset is, I think of you.",
+        "The rest of this one is locked in the treasure chest.",
       letter: "E",
     },
   ],
@@ -131,11 +130,13 @@ window.SITE = {
   finale: {
     title: "Happy 4 Years",
     message:
-      "TODO: the big message. This is the payoff, so make it count.\n\n" +
-      "Could reveal the LA trip as 'the next stop on the map', or be a letter from you.",
+      "It's been a crazy, long, whirlwind journey loving you and spending life with you for the past {days} days. You've made me the best version of myself I think I ever could have been, and I hope I've brought out even 1% of that in you.\n\n" +
+      "I know this year has had its fair share of rough patches, but I would do it all over again if it meant becoming a better person, and a better person for you.\n\n" +
+      "When I see how pretty the sunset is, I think of you.",
     signature: "— Isaiah",
-    photo: "", // optional, e.g. "images/finale.jpg"
+    photo: "", // optional: a favorite sunset pic, e.g. "sunset-1.jpg"
   },
+
 
   /* ----------------------------------------------------------------
      EASTER EGGS
