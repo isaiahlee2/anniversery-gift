@@ -9,7 +9,7 @@
   const esc = (s = "") =>
     String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const paras = (s = "") =>
-    String(s).split(/\n\s*\n/).map((p) => `<p>${esc(p.trim()).replace(/\n/g, "<br>")}</p>`).join("");
+    String(s).split(/\n\s*\n/).map((p) => `<p>${esc(p.trim()).replace(/\n/g, "<br>").replace(/\{days\}/g, () => daysTogether().toLocaleString())}</p>`).join("");
   const roman = (n) => {
     const t = [[10, "X"], [9, "IX"], [5, "V"], [4, "IV"], [1, "I"]];
     let r = ""; for (const [v, s] of t) while (n >= v) { r += s; n -= v; } return r;

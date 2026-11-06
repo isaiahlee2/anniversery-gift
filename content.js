@@ -13,7 +13,7 @@ window.SITE = {
   sealInitials: "N & I",
 
   // Your first day together (YYYY-MM-DD) — powers the "days of adventures" counter
-  togetherSince: "2022-11-12", // TODO: real date
+  togetherSince: "2022-11-12",
 
   intro: {
     title: "A Map of Us",
@@ -41,70 +41,78 @@ window.SITE = {
   memories: [
     {
       title: "Where It Started",
-      date: "Month Year", // TODO
+      date: "August 2022",
       place: "Crumbl",
       photos: [{ src: "crumbl.jpg", caption: "" }],
       story:
-        "TODO: the story of meeting at Crumbl. Write it like you're telling her out loud — what happened, what you noticed about her, what you were thinking.\n\nBlank line = new paragraph.",
+        "Shout out Riju, shout out Michelle, shout out Ronit, shout out Anas. Can't believe we actually met at a bakery.",
       letter: "T",
     },
     {
       title: "All Night in the Car",
-      date: "Month Year", // TODO
-      place: "TODO: where you parked",
+      date: "September 2022",
+      place: "",
       photos: [{ src: "car-night.jpg", caption: "" }],
-      story: "TODO: the second hangout — spending the whole night talking in the car.",
+      story:
+        "Our matching everyday era. Lowkey crazy that this was over 4 years ago. Four years from now, we're gonna be 25. RIP.",
       letter: "R",
     },
     {
       title: "My Prom",
-      date: "Month Year", // TODO
-      place: "TODO",
+      date: "June 2023",
+      place: "",
       photos: [{ src: "my-prom.jpg", caption: "" }],
-      story: "TODO: the night she came to your prom.",
+      story: "Your red hair and red dress were perfect.",
       letter: "E",
     },
     {
       title: "Camping with Your Parents",
-      date: "Month Year", // TODO
-      place: "TODO: campground",
+      date: "July 2023",
+      place: "",
       photos: [{ src: "camping.jpg", caption: "" }],
-      story: "TODO: the camping trip with her parents.",
+      story: "A core memory trip. Shout out the sun for giving us goated lighting for 2 days.",
       letter: "A",
     },
     {
       title: "Your Prom",
-      date: "Month Year", // TODO
-      place: "TODO",
+      date: "June 2024",
+      place: "",
       photos: [{ src: "her-prom.jpg", caption: "" }],
-      story: "TODO: going to her prom a year later.",
+      story:
+        "The first time I met your friends, and we created the goated quad group. Also, why'd we cook with those colors?",
       letter: "S",
     },
     {
       title: "Off to College, Together",
-      date: "Fall Year", // TODO
+      date: "October 2024",
       place: "Corvallis",
       photos: [{ src: "corvallis.jpg", caption: "" }],
-      story: "TODO: heading to college together.",
+      story:
+        "We moved to school 400 miles away from our friends and family. Maybe it's a decision we've both thought twice about, but for me, the best decision was being as close to you as possible and growing with you.",
       letter: "U",
     },
     {
       title: "Sabrina Carpenter",
-      date: "Month Year", // TODO
-      place: "TODO: venue",
+      date: "November 2024",
+      place: "",
       photos: [{ src: "sabrina.jpg", caption: "" }],
-      story: "TODO: the Sabrina Carpenter concert.",
+      story:
+        "I hate this photo, but Sabrina was lit, and it was a fun way to celebrate 3 years on the dot.",
       letter: "R",
     },
     {
       // Compilation stop: photos show as a scattered polaroid collage
       // instead of a swipe carousel. Add as many as you want.
+      // {days} in any text is replaced with the live days-together count.
       layout: "collage",
       title: "Sunsets & Selfies",
       date: "All four years",
-      place: "Everywhere",
+      place: "",
       photos: [],
-      story: "TODO: a short caption for the collage (optional).",
+      story:
+        "All the sunsets we got to experience together.\n\n" +
+        "It's been a crazy, long, whirlwind journey loving you and spending life with you for the past {days} days. You've made me the best version of myself I think I ever could have been, and I hope I've brought out even 1% of that in you. I know this year has had its fair share of rough patches, but I would do it all over again if it meant becoming a better person, and a better person for you.\n\n" +
+        "When I see how pretty the sunset is, I think of you.",
       letter: "E",
     },
   ],
