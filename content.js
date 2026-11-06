@@ -28,10 +28,10 @@ window.SITE = {
 
   /* ----------------------------------------------------------------
      MEMORIES — one object per X on the map, in order.
-     - photos: put image files in the /images folder, then list them:
+     - photos: upload image files to the repo, then list them:
          photos: [
-           { src: "images/first-date.jpg", caption: "look at us" },
-           "images/another-one.jpg",          // caption is optional
+           { src: "first-date.jpg", caption: "look at us" },
+           "another-one.jpg",                 // caption is optional
          ]
        Leave photos: [] and a placeholder polaroid shows instead.
      - story: blank line = new paragraph.
@@ -43,7 +43,7 @@ window.SITE = {
       title: "Where It Started",
       date: "Month Year", // TODO
       place: "Crumbl",
-      photos: [],
+      photos: [{ src: "crumbl.jpg", caption: "" }],
       story:
         "TODO: the story of meeting at Crumbl. Write it like you're telling her out loud — what happened, what you noticed about her, what you were thinking.\n\nBlank line = new paragraph.",
       letter: "T",
@@ -52,7 +52,7 @@ window.SITE = {
       title: "All Night in the Car",
       date: "Month Year", // TODO
       place: "TODO: where you parked",
-      photos: [],
+      photos: [{ src: "car-night.jpg", caption: "" }],
       story: "TODO: the second hangout — spending the whole night talking in the car.",
       letter: "R",
     },
@@ -60,7 +60,7 @@ window.SITE = {
       title: "My Prom",
       date: "Month Year", // TODO
       place: "TODO",
-      photos: [],
+      photos: [{ src: "my-prom.jpg", caption: "" }],
       story: "TODO: the night she came to your prom.",
       letter: "E",
     },
@@ -68,7 +68,7 @@ window.SITE = {
       title: "Camping with Your Parents",
       date: "Month Year", // TODO
       place: "TODO: campground",
-      photos: [],
+      photos: [{ src: "camping.jpg", caption: "" }],
       story: "TODO: the camping trip with her parents.",
       letter: "A",
     },
@@ -76,7 +76,7 @@ window.SITE = {
       title: "Your Prom",
       date: "Month Year", // TODO
       place: "TODO",
-      photos: [],
+      photos: [{ src: "her-prom.jpg", caption: "" }],
       story: "TODO: going to her prom a year later.",
       letter: "S",
     },
@@ -84,7 +84,7 @@ window.SITE = {
       title: "Off to College, Together",
       date: "Fall Year", // TODO
       place: "Corvallis",
-      photos: [],
+      photos: [{ src: "corvallis.jpg", caption: "" }],
       story: "TODO: heading to college together.",
       letter: "U",
     },
@@ -92,7 +92,7 @@ window.SITE = {
       title: "Sabrina Carpenter",
       date: "Month Year", // TODO
       place: "TODO: venue",
-      photos: [],
+      photos: [{ src: "sabrina.jpg", caption: "" }],
       story: "TODO: the Sabrina Carpenter concert.",
       letter: "R",
     },
