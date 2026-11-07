@@ -21,9 +21,8 @@ window.SITE = {
     // Short note she reads before the map. Blank line = new paragraph.
     note:
       "TODO: a short note from you goes here.\n\n" +
-      "Every X on this map is a memory. Hidden somewhere inside each one is a tiny golden letter — collect them all to open the treasure at the end.\n\n" +
-      "Also… poke around. Some things on this map have secrets.",
-    button: "Begin the adventure",
+      "Every pin on this map is a memory. Tap one and we'll drive there. Hidden somewhere inside each memory is a tiny golden letter — collect all 8 to open the treasure at the end.",
+    button: "Start the car",
   },
 
   /* ----------------------------------------------------------------
@@ -138,30 +137,6 @@ window.SITE = {
   },
 
 
-  /* ----------------------------------------------------------------
-     EASTER EGGS
-     ---------------------------------------------------------------- */
-  secrets: {
-    // Tap the compass rose (top of the map) 4 times — once per year
-    compass: {
-      title: "You found the compass secret",
-      message: "TODO: secret message #1. Maybe something about 'no matter where we go'.",
-    },
-    // A message in a bottle washes up after she's opened every memory
-    bottle: {
-      title: "A message in a bottle",
-      message: "TODO: secret message for finishing every memory.",
-    },
-    // Little notes behind the doodles on the map (ship, island, etc.).
-    // Tapping a doodle shows the next note in this list.
-    doodles: [
-      "TODO: inside joke #1",
-      "TODO: inside joke #2",
-      "TODO: inside joke #3",
-      "TODO: inside joke #4",
-      "TODO: inside joke #5",
-      "TODO: inside joke #6",
-      "TODO: inside joke #7",
-    ],
-  },
+  // The car that drives between stops. Any CSS color works.
+  car: { color: "#c3c9d1" }, // silver
 };

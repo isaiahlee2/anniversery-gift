@@ -1,6 +1,6 @@
 # A Map of Us
 
-A phone-first treasure-map story site: an opening scroll with a wax seal, a winding trail of memories, hidden golden letters, and a locked chest at the end.
+A phone-first road-trip story site: an opening scroll with a wax seal, a winding road of memories a little car drives along, hidden golden letters, and a locked chest at the end.
 
 Plain HTML/CSS/JS with no build step. It runs straight from GitHub on Netlify.
 
@@ -16,15 +16,13 @@ Plain HTML/CSS/JS with no build step. It runs straight from GitHub on Netlify.
 - **Finale:** the message shown when the chest opens.
 - **Secrets:** the compass message, the message in a bottle, and the doodle inside jokes.
 
-## Easter eggs
+## How it plays
 
-| Egg | How she finds it |
-| --- | --- |
-| Golden letters | One tiny faded letter hides in each memory card, in a different spot each time. Tap it to collect it. |
-| Treasure chest | Opens only after all letters are found and she types the password. |
-| Compass | Tap the compass rose 4 times quickly, once per year. |
-| Doodles | Tap the ship, island, sea serpent, and so on. Each tap shows the next inside joke. |
-| Message in a bottle | Washes up near the chest once she has opened every memory. |
+- She taps a pin and a little silver sedan drives down the road to it, then the memory opens. Next and back in a memory drive to the neighbouring pin. After stop 8, "treasure →" drives to the chest.
+- Each memory hides one faint golden letter. Tap it to collect it.
+- The chest only opens once all letters are found and she types the password. The letters are shown scrambled.
+- The car's color is `car.color` in `content.js`.
+- `{days}` in any text is replaced with the live days-together count.
 
 ## Testing
 

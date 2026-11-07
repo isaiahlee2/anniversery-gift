@@ -1,28 +1,37 @@
-/* A Map of Us — app logic. Content lives in js/content.js. */
+/* A Map of Us — app logic. Everything she reads lives in content.js. */
 (() => {
   "use strict";
   const S = window.SITE;
   const M = S.memories;
+  const N = M.length;
   const $ = (sel, el = document) => el.querySelector(sel);
 
-  /* ---------- tiny helpers ---------- */
+  /* ---------- helpers ---------- */
   const esc = (s = "") =>
     String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-  const paras = (s = "") =>
-    String(s).split(/\n\s*\n/).map((p) => `<p>${esc(p.trim()).replace(/\n/g, "<br>").replace(/\{days\}/g, () => daysTogether().toLocaleString())}</p>`).join("");
-  const roman = (n) => {
-    const t = [[10, "X"], [9, "IX"], [5, "V"], [4, "IV"], [1, "I"]];
-    let r = ""; for (const [v, s] of t) while (n >= v) { r += s; n -= v; } return r;
+  const daysTogether = () => {
+    const start = new Date(S.togetherSince + "T00:00:00");
+    return Math.max(0, Math.floor((Date.now() - start.getTime()) / 86400000));
   };
+  const paras = (s = "") =>
+    String(s).split(/\n\s*\n/).map((p) =>
+      `<p>${esc(p.trim()).replace(/\n/g, "<br>").replace(/\{days\}/g, () => daysTogether().toLocaleString())}</p>`).join("");
   const buzz = (ms = 15) => { try { navigator.vibrate && navigator.vibrate(ms); } catch (e) {} };
   const norm = (s) => String(s).toUpperCase().replace(/[^A-Z0-9]/g, "");
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+  const reduceMotion = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const firstPhoto = (m) => { const p = (m.photos || [])[0]; return p ? (typeof p === "string" ? p : p.src) : ""; };
+  const shortDate = (d = "") => d.replace(/^(\w{3})\w*\s+(\d{4})$/, "$1 $2");
+
+  if (S.car && S.car.color) document.documentElement.style.setProperty("--car", S.car.color);
 
   /* ---------- saved progress (per-browser; safe if storage is blocked) ---------- */
   const store = {
     get(k, d) { try { const v = localStorage.getItem("tm_" + k); return v ? JSON.parse(v) : d; } catch (e) { return d; } },
     set(k, v) { try { localStorage.setItem("tm_" + k, JSON.stringify(v)); } catch (e) {} },
   };
-  // Visit the site with ?reset to wipe progress (handy while testing)
+  // Visit the site with ?reset to wipe progress (do this before sending it to her)
   if (/[?&]reset\b/.test(location.search)) {
     try { Object.keys(localStorage).filter((k) => k.startsWith("tm_")).forEach((k) => localStorage.removeItem(k)); } catch (e) {}
     history.replaceState(null, "", location.pathname);
@@ -30,20 +39,16 @@
   const state = {
     visited: new Set(store.get("visited", [])),
     letters: store.get("letters", []), // memory indexes, in the order she found them
+    carAt: store.get("car", -1),       // -1 = start, 0..N-1 = a stop, N = the treasure
   };
-  const save = () => { store.set("visited", [...state.visited]); store.set("letters", state.letters); };
+  const save = () => { store.set("visited", [...state.visited]); store.set("letters", state.letters); store.set("car", state.carAt); };
 
-  // Friendly warning for you (not her) if the letters can't spell the password
   const sortL = (s) => norm(s).split("").sort().join("");
   if (sortL(M.map((m) => m.letter || "").join("")) !== sortL(S.password)) {
-    console.warn("[treasure map] The memories' letters don't match the password's letters. Check js/content.js.");
+    console.warn("[map of us] The memories' letters don't match the password's letters. Check content.js.");
   }
 
   /* =================== INTRO =================== */
-  const daysTogether = () => {
-    const start = new Date(S.togetherSince + "T00:00:00");
-    return Math.max(0, Math.floor((Date.now() - start.getTime()) / 86400000));
-  };
   $("#intro-kicker").textContent = `for ${S.herName}`;
   $("#intro-title").textContent = S.intro.title;
   $("#intro-sub").textContent = S.intro.subtitle;
@@ -63,23 +68,46 @@
     $("#map").hidden = false;
     window.scrollTo(0, 0);
     buildMap();
+    setTimeout(() => say("vroom vroom"), 500);
   });
 
   /* =================== MAP =================== */
   $("#bar-title").textContent = S.intro.title;
-  $("#days-counter").textContent = `${daysTogether().toLocaleString()} days of adventures`;
+  $("#days-counter").textContent = `${daysTogether().toLocaleString()} days of us`;
 
-  const DOODLES = ["d-ship", "d-island", "d-serpent", "d-mountains", "d-balloon", "d-whale", "d-lighthouse"];
-  let doodleSecretIdx = 0;
-  let geom = null;
+  let G = null;          // map geometry: { W, H, path, len, stopLen[], car }
+  let driving = false;
+  let facing = 1;        // 1 = driving forward along the road, -1 = backward
+
+  const CAR_SVG = `
+    <svg viewBox="0 0 120 50" aria-hidden="true">
+      <ellipse cx="60" cy="47" rx="50" ry="3.5" fill="rgba(43,32,70,.2)"/>
+      <g class="car-body">
+        <path class="paint" stroke="#3b2c45" stroke-width="2.2" stroke-linejoin="round"
+          d="M7,35 L6,27 Q6,23 10,22 L31,19.5 Q39,9 53,8 L73,8 Q83,8.5 91,18.5 L109,21.5 Q115,22.5 115.5,27 L116,33 Q116,37 112,37 L103,37 A11,11 0 0 0 81,37 L39,37 A11,11 0 0 0 17,37 L10,37 Q7,37 7,35 Z"/>
+        <path d="M14,25 Q60,20.5 106,24.5" fill="none" stroke="rgba(255,255,255,.55)" stroke-width="2" stroke-linecap="round"/>
+        <path d="M39,33 L81,33" stroke="rgba(43,32,70,.35)" stroke-width="2.5" stroke-linecap="round"/>
+        <path d="M35,19.5 Q41,11.5 53,10.5 L59.5,10.5 L59.5,19.5 Z" fill="#bfe6f5" stroke="#3b2c45" stroke-width="1.8" stroke-linejoin="round"/>
+        <path d="M62.5,10.5 L72,10.5 Q81,11 87.5,19.5 L62.5,19.5 Z" fill="#bfe6f5" stroke="#3b2c45" stroke-width="1.8" stroke-linejoin="round"/>
+        <path d="M41,18 L47,12 M66,18 L71,12.5" stroke="#fff" stroke-width="2" stroke-linecap="round" opacity=".8"/>
+        <path d="M61,20.5 L61,34.5" stroke="#3b2c45" stroke-width="1.6"/>
+        <rect x="50" y="22.5" width="6" height="2" rx="1" fill="#3b2c45"/>
+        <rect x="74" y="22.5" width="6" height="2" rx="1" fill="#3b2c45"/>
+        <path d="M86.5,18.5 L90,15.5 L92.5,18.8 Z" fill="#3b2c45"/>
+        <path d="M109.5,23.2 Q114.6,23.8 115.2,27.4 L108.8,27.2 Z" fill="#fff6c2" stroke="#3b2c45" stroke-width="1.2"/>
+        <path d="M6.4,24 L11.4,23.2 L11.4,28.4 L6.5,28.4 Z" fill="#ff5a4a" stroke="#3b2c45" stroke-width="1.2"/>
+        <path d="M112,31 L116,31" stroke="#3b2c45" stroke-width="1.4"/>
+      </g>
+      <g class="wheel"><circle cx="28" cy="37" r="9.5" fill="#2e2638"/><circle cx="28" cy="37" r="5.6" fill="#dde1e7"/><path d="M28,32.6 V41.4 M23.6,37 H32.4" stroke="#8f95a1" stroke-width="1.6"/></g>
+      <g class="wheel"><circle cx="92" cy="37" r="9.5" fill="#2e2638"/><circle cx="92" cy="37" r="5.6" fill="#dde1e7"/><path d="M92,32.6 V41.4 M87.6,37 H96.4" stroke="#8f95a1" stroke-width="1.6"/></g>
+    </svg>`;
 
   function smoothPath(p) {
-    // Catmull-Rom → cubic Bézier for a hand-drawn-feeling winding trail
     let d = `M${p[0].x.toFixed(1)},${p[0].y.toFixed(1)}`;
     for (let i = 0; i < p.length - 1; i++) {
       const p0 = p[i - 1] || p[i], p1 = p[i], p2 = p[i + 1], p3 = p[i + 2] || p2;
-      const c1 = { x: p1.x + (p2.x - p0.x) / 6, y: p1.y + (p2.y - p0.y) / 6 };
-      const c2 = { x: p2.x - (p3.x - p1.x) / 6, y: p2.y - (p3.y - p1.y) / 6 };
+      const c1 = { x: p1.x + (p2.x - p0.x) / 5, y: p1.y + (p2.y - p0.y) / 5 };
+      const c2 = { x: p2.x - (p3.x - p1.x) / 5, y: p2.y - (p3.y - p1.y) / 5 };
       d += ` C${c1.x.toFixed(1)},${c1.y.toFixed(1)} ${c2.x.toFixed(1)},${c2.y.toFixed(1)} ${p2.x.toFixed(1)},${p2.y.toFixed(1)}`;
     }
     return d;
@@ -88,94 +116,219 @@
   function buildMap() {
     const canvas = $("#map-canvas");
     const W = canvas.clientWidth;
-    const GAP = 210, TOP = 300;
-    const pts = M.map((_, i) => ({ x: W * (0.5 + 0.27 * Math.sin(i * 1.75 + 0.9)), y: TOP + i * GAP }));
-    const start = { x: W * 0.16, y: TOP - 120 };
-    const chest = { x: W * 0.5, y: TOP + M.length * GAP + 30 };
+    const GAP = 240, TOP = 360;
+    const pts = M.map((_, i) => ({ x: W * (i % 2 ? 0.7 : 0.3), y: TOP + i * GAP }));
+    const start = { x: W * 0.52, y: 190 };
+    const chest = { x: W * 0.5, y: TOP + N * GAP + 40 };
+    const route = [start, ...pts, chest];
     const H = chest.y + 230;
     canvas.style.height = H + "px";
-    geom = { W, pts, chest };
+    const d = smoothPath(route);
 
-    // waves scattered in the empty "sea"
-    let waves = "";
-    const rnd = mulberry(4);
-    for (let i = 0; i < Math.round(H / 140); i++) {
-      const x = 12 + rnd() * (W - 60), y = 220 + rnd() * (H - 300);
-      if (pts.some((p) => Math.hypot(p.x - x, p.y - y) < 90)) continue;
-      waves += `<path class="wave" d="M${x},${y} q6 -5 12 0 t12 0 t12 0" />`;
-    }
-
-    const trail = smoothPath([start, ...pts, chest]);
     let html = `
-      <svg class="map-svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
-        ${waves}
-        <path class="trail-glow" d="${trail}" />
-        <path class="trail" d="${trail}" />
+      <svg class="map-svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
+        <defs>
+          <radialGradient id="sunGlow"><stop offset="0" stop-color="#fff2b8"/><stop offset=".35" stop-color="#ffd166" stop-opacity=".85"/><stop offset="1" stop-color="#ff9f7a" stop-opacity="0"/></radialGradient>
+        </defs>
+        <circle cx="${chest.x}" cy="${chest.y + 10}" r="190" fill="url(#sunGlow)"/>
+        <g id="scenery"></g>
+        <path class="road-shadow" d="${d}"/>
+        <path class="road-edge" d="${d}"/>
+        <path class="road" d="${d}"/>
+        <path class="road-line" d="${d}"/>
       </svg>
-      <div class="map-heading"><b>Here be memories</b>follow the trail, ${esc(S.herName)}</div>
-      <button class="compass" id="compass" aria-label="Compass">${compassSVG()}</button>`;
+      <div class="map-hint" style="left:${Math.max(14, W * 0.06)}px;top:96px">tap a pin<br>to drive there
+        <svg viewBox="0 0 46 30"><path d="M4 4 C14 26, 30 26, 42 18 M42 18 l-8 -1 M42 18 l-3 7"/></svg></div>
+      <div class="start-sign" style="left:${start.x + 60}px;top:${start.y - 62}px"><div class="board">START<small>day one</small></div><div class="post"></div></div>`;
 
-    // memory stops
     M.forEach((m, i) => {
       const p = pts[i];
       const side = p.x < W / 2 ? "label-right" : "label-left";
+      const src = firstPhoto(m);
       html += `
-        <button class="stop ${side} ${state.visited.has(i) ? "visited" : ""}" data-i="${i}"
-                style="left:${p.x}px;top:${p.y}px" aria-label="Memory ${i + 1}: ${esc(m.title)}">
-          <span class="ring"></span><span class="stop-x"></span>
-          <span class="stop-num">${i + 1}</span>
-          <span class="stop-label">${esc(m.title)}<small>${esc(m.date)}</small></span>
+        <button class="pin ${side}" data-i="${i}" style="left:${p.x - 33}px;top:${p.y - 98}px" aria-label="Memory ${i + 1}: ${esc(m.title)}">
+          <span class="ring"></span>
+          <span class="pin-head">${src ? `<img src="${esc(src)}" alt="" loading="lazy">` : `<span class="pin-blank">${i + 1}</span>`}</span>
+          <span class="pin-num">${i + 1}</span>
+          <span class="pin-check">✓</span>
+          <span class="pin-label">${esc(m.title)}<small>${esc(m.date)}</small></span>
         </button>`;
     });
 
-    // doodles between stops, on the opposite side of the trail
-    for (let i = 0; i < M.length - 1; i++) {
-      const a = pts[i], b = pts[i + 1];
-      const mid = (a.x + b.x) / 2;
-      const x = mid < W / 2 ? W * 0.8 : W * 0.2;
-      const y = (a.y + b.y) / 2;
-      const id = DOODLES[i % DOODLES.length];
-      html += `<button class="doodle" style="left:${x}px;top:${y}px" aria-label="A doodle"><svg><use href="#${id}" /></svg></button>`;
-    }
-
-    // treasure chest
     html += `
-      <button class="chest-stop" id="chest" style="left:${chest.x}px;top:${chest.y}px" aria-label="The treasure chest">
+      <button class="chest-stop" id="chest" style="left:${chest.x - 65}px;top:${chest.y - 70}px" aria-label="The treasure chest">
         <svg viewBox="0 0 64 64"><use href="#d-chest" /></svg>
         <span class="chest-caption">${esc(S.chest.title)}<small id="chest-sub"></small></span>
-      </button>`;
+      </button>
+      <div class="car" id="car">${CAR_SVG}</div>`;
 
     canvas.innerHTML = html;
 
-    canvas.querySelectorAll(".stop").forEach((b) => b.addEventListener("click", () => openMemory(+b.dataset.i)));
-    canvas.querySelectorAll(".doodle").forEach((b) => b.addEventListener("click", () => tapDoodle(b)));
-    $("#chest").addEventListener("click", openChest);
-    $("#compass").addEventListener("click", spinCompass);
+    // measure the road so the car can drive along it
+    const path = canvas.querySelector(".road");
+    const len = path.getTotalLength();
+    const samples = [];
+    for (let l = 0; l <= len; l += 4) { const q = path.getPointAtLength(l); samples.push({ l, x: q.x, y: q.y }); }
+    const stopLen = route.map((pt) => {
+      let best = 0, bd = Infinity;
+      for (const s of samples) { const dd = (s.x - pt.x) ** 2 + (s.y - pt.y) ** 2; if (dd < bd) { bd = dd; best = s.l; } }
+      return best;
+    });
+    G = { W, H, path, len, stopLen, samples, pts, chest, start, car: $("#car") };
+
+    addScenery(W, H, samples, pts, chest, start);
+
+    canvas.querySelectorAll(".pin").forEach((b) => b.addEventListener("click", () => goTo(+b.dataset.i)));
+    $("#chest").addEventListener("click", () => goTo(N));
+
+    placeCar(parkLen(state.carAt), facing);
     refresh();
   }
 
-  function refresh() {
-    const n = M.length, got = state.letters.length;
-    $("#pouch-count").textContent = `${got}/${n}`;
-    document.querySelectorAll(".stop").forEach((b) => b.classList.toggle("visited", state.visited.has(+b.dataset.i)));
-    const chest = $("#chest");
-    if (chest) {
-      chest.classList.toggle("ready", got === n);
-      $("#chest-sub").textContent = got === n ? "it's rattling…" : `${got} of ${n} letters found`;
+  // trees, bushes and flowers — decoration only, kept off the road and pins
+  function addScenery(W, H, samples, pts, chest, start) {
+    const rnd = mulberry(11);
+    const avoid = [
+      ...pts.map((p) => ({ x: p.x, y: p.y - 60, r: 62 })),
+      ...pts.map((p) => ({ x: p.x + (p.x < W / 2 ? 150 : -150), y: p.y - 70, r: 75 })), // labels
+      { x: chest.x, y: chest.y - 10, r: 120 },
+      { x: start.x + 95, y: start.y - 30, r: 60 },
+      { x: W * 0.2, y: 120, r: 80 },
+    ];
+    const far = (x, y, r) =>
+      samples.every((s) => (s.x - x) ** 2 + (s.y - y) ** 2 > (r + 26) ** 2) &&
+      avoid.every((a) => (a.x - x) ** 2 + (a.y - y) ** 2 > (a.r + r) ** 2);
+    let g = "";
+    const placed = [];
+    for (let k = 0; k < Math.round(H / 9); k++) {
+      const x = 14 + rnd() * (W - 28), y = 90 + rnd() * (H - 200);
+      const t = rnd();
+      const r = t < 0.45 ? 20 : t < 0.7 ? 14 : 8;
+      if (!far(x, y, r) || placed.some((p) => (p.x - x) ** 2 + (p.y - y) ** 2 < (p.r + r + 6) ** 2)) continue;
+      placed.push({ x, y, r });
+      const s = (0.85 + rnd() * 0.35).toFixed(2);
+      if (r === 20) {
+        const c = rnd() < 0.5 ? "#7fb86e" : "#5c9c5c";
+        g += `<g transform="translate(${x.toFixed(0)},${y.toFixed(0)}) scale(${s})"><ellipse cx="0" cy="24" rx="16" ry="4" fill="rgba(58,47,92,.12)"/><rect x="-3" y="6" width="6" height="18" rx="2" fill="#8a6a4f"/><circle cx="0" cy="-2" r="16" fill="${c}"/><circle cx="-6" cy="-8" r="6" fill="rgba(255,255,255,.18)"/></g>`;
+      } else if (r === 14) {
+        g += `<g transform="translate(${x.toFixed(0)},${y.toFixed(0)}) scale(${s})"><circle cx="-9" cy="4" r="8" fill="#8cc07c"/><circle cx="9" cy="4" r="8" fill="#8cc07c"/><circle cx="0" cy="-2" r="10" fill="#9fcd8e"/></g>`;
+      } else {
+        const fc = ["#ff6f59", "#ffc44d", "#ffffff", "#ff9fb4"][Math.floor(rnd() * 4)];
+        g += `<g transform="translate(${x.toFixed(0)},${y.toFixed(0)})"><path d="M0,8 V0 M-5,8 Q-6,3 -8,1 M5,8 Q6,3 8,1" stroke="#5c9c5c" stroke-width="2" fill="none" stroke-linecap="round"/><circle cx="0" cy="-1" r="3.2" fill="${fc}"/><circle cx="-8" cy="0" r="2.4" fill="${fc}"/><circle cx="8" cy="0" r="2.4" fill="${fc}"/></g>`;
+      }
     }
-    if (state.visited.size === n && !$("#bottle") && geom) addBottle();
+    $("#scenery").innerHTML = g;
   }
 
-  // window resize / rotation → redraw so it always fits the phone
+  function parkLen(k) {
+    if (k < 0) return G.stopLen[0];
+    if (k >= N) return Math.max(0, G.len - 78);
+    return G.stopLen[k + 1];
+  }
+  const carLen = () => parkLen(state.carAt);
+
+  function placeCar(L, dir) {
+    const { path, len, car } = G;
+    const p = path.getPointAtLength(L);
+    const a = path.getPointAtLength(Math.min(len, L + 3)), b = path.getPointAtLength(Math.max(0, L - 3));
+    const hx = (a.x - b.x) * dir, hy = (a.y - b.y) * dir;
+    const flip = hx < 0;
+    const ang = clamp((Math.atan2(hy, Math.abs(hx)) * 180) / Math.PI, -24, 24);
+    car.style.transform = `translate(${p.x - 48}px, ${p.y - 33}px) rotate(${flip ? -ang : ang}deg)${flip ? " scaleX(-1)" : ""}`;
+    return { p, hx, hy };
+  }
+
+  function driveTo(k) {
+    return new Promise((resolve) => {
+      const L0 = carLen(), L1 = parkLen(k);
+      const dir = L1 >= L0 ? 1 : -1;
+      facing = dir;
+      if (Math.abs(L1 - L0) < 2 || reduceMotion) {
+        placeCar(L1, dir); state.carAt = k; save(); return resolve();
+      }
+      driving = true;
+      const car = G.car, canvas = $("#map-canvas");
+      car.classList.add("driving");
+      buzz(10);
+      const dur = clamp(Math.abs(L1 - L0) * 2.6, 800, 3400);
+      const t0 = performance.now();
+      let lastPuff = 0;
+      const frame = (now) => {
+        const t = Math.min(1, (now - t0) / dur);
+        const L = L0 + (L1 - L0) * ease(t);
+        const { p, hx, hy } = placeCar(L, dir);
+        window.scrollTo(0, p.y + canvas.offsetTop - innerHeight * 0.52);
+        if (now - lastPuff > 85 && t < 0.92) {
+          lastPuff = now;
+          const m = Math.hypot(hx, hy) || 1;
+          puff(p.x - (hx / m) * 46, p.y - (hy / m) * 46 - 4, hx < 0 ? 10 : -10);
+        }
+        if (t < 1) return requestAnimationFrame(frame);
+        car.classList.remove("driving");
+        driving = false;
+        state.carAt = k; save();
+        resolve();
+      };
+      requestAnimationFrame(frame);
+    });
+  }
+
+  function puff(x, y, dx) {
+    const el = document.createElement("span");
+    el.className = "puff";
+    el.style.left = x + "px"; el.style.top = y + "px";
+    el.style.setProperty("--dx", dx + "px");
+    $("#map-canvas").appendChild(el);
+    setTimeout(() => el.remove(), 850);
+  }
+
+  function say(text) {
+    if (!G) return;
+    const p = G.path.getPointAtLength(carLen());
+    const el = document.createElement("span");
+    el.className = "beep";
+    el.textContent = text;
+    el.style.left = p.x + "px"; el.style.top = p.y - 44 + "px";
+    $("#map-canvas").appendChild(el);
+    setTimeout(() => el.remove(), 1350);
+  }
+
+  const BEEPS = ["beep beep!", "we're here!", "parked!", "honk honk", "next stop!"];
+  async function goTo(k) {
+    if (driving || !G) return;
+    k = clamp(k, 0, N);
+    const moved = state.carAt !== k;
+    if (moved) {
+      await driveTo(k);
+      say(k >= N ? "X marks the spot!" : BEEPS[k % BEEPS.length]);
+      const pin = document.querySelector(`.pin[data-i="${k}"]`);
+      if (pin) { pin.classList.remove("arrived"); void pin.offsetWidth; pin.classList.add("arrived"); }
+      await new Promise((r) => setTimeout(r, 450));
+    }
+    if (k >= N) openChest(); else openMemory(k);
+  }
+
+  function refresh() {
+    const got = state.letters.length;
+    $("#pouch-count").textContent = `${got}/${N}`;
+    document.querySelectorAll(".pin").forEach((b) => b.classList.toggle("visited", state.visited.has(+b.dataset.i)));
+    const chest = $("#chest");
+    if (chest) {
+      chest.classList.toggle("ready", got === N);
+      $("#chest-sub").textContent = got === N ? "it's rattling…" : `${got} of ${N} letters found`;
+    }
+  }
+
   let rw;
   window.addEventListener("resize", () => {
     clearTimeout(rw);
-    rw = setTimeout(() => { if (!$("#map").hidden && $("#map-canvas").clientWidth !== geom?.W) buildMap(); }, 200);
+    rw = setTimeout(() => { if (!$("#map").hidden && !driving && $("#map-canvas").clientWidth !== G?.W) buildMap(); }, 200);
   });
 
   /* =================== MEMORY SHEET =================== */
   let current = -1;
   const sheet = $("#sheet");
+  const PIN_ICON = `<svg viewBox="0 0 24 24"><path d="M12 2C8 2 5 5 5 9c0 5 7 13 7 13s7-8 7-13c0-4-3-7-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z"/></svg>`;
 
   function openMemory(i) {
     current = i;
@@ -185,23 +338,22 @@
     const empty = `<figure class="polaroid"><span class="tape"></span><div class="ph">photo goes here</div><figcaption>&nbsp;</figcaption></figure>`;
     const polaroids = photos.length
       ? photos.map((p) => `<figure class="polaroid"><span class="tape"></span><img src="${esc(p.src)}" alt="${esc(p.caption || m.title)}" loading="lazy"><figcaption>${esc(p.caption || "")}</figcaption></figure>`).join("")
-      : empty.repeat(collage ? 6 : 1);
+      : empty.repeat(collage ? 4 : 1);
 
     $("#sheet-scroll").innerHTML = `
-      <p class="mem-kicker">Stop ${roman(i + 1)}</p>
+      <div class="mem-chips"><span class="chip">Stop ${i + 1} of ${N}</span>${m.date ? `<span class="chip date">${esc(shortDate(m.date))}</span>` : ""}</div>
       <h2 class="mem-title" id="sheet-title">${esc(m.title)}</h2>
-      <p class="mem-meta">${esc(m.date)}${m.place ? " · " + esc(m.place) : ""}</p>
+      ${m.place ? `<p class="mem-place">${PIN_ICON}${esc(m.place)}</p>` : ""}
       <div class="photos ${collage ? "collage" : photos.length <= 1 ? "single" : ""}" id="photos">${polaroids}</div>
       ${!collage && photos.length > 1 ? `<div class="dots" id="dots">${photos.map((_, k) => `<i class="${k ? "" : "on"}"></i>`).join("")}</div>` : ""}
       <div class="mem-story">${paras(m.story)}</div>`;
     $("#sheet-scroll").scrollTop = 0;
-    $("#sheet-count").textContent = `${i + 1} / ${M.length}`;
+    $("#sheet-count").textContent = `${i + 1} / ${N}`;
     $("#prev-btn").disabled = i === 0;
-    $("#next-btn").disabled = i === M.length - 1;
+    $("#next-btn").textContent = i === N - 1 ? "treasure →" : "next →";
 
     hideLetter(i);
     wireDots();
-    // tap any photo to see it big
     $("#sheet-scroll").querySelectorAll(".polaroid img").forEach((img) =>
       img.addEventListener("click", () => {
         const cap = img.nextElementSibling ? img.nextElementSibling.textContent : "";
@@ -226,14 +378,14 @@
     }, { passive: true });
   }
 
-  // Each memory hides its letter in a different (but consistent) spot
+  // each memory hides its golden letter in a different (but consistent) spot
   function hideLetter(i) {
     if (state.letters.includes(i) || !M[i].letter) return;
     const spots = [
       () => [$("#photos .polaroid"), "88%", "92%"],
       () => [$("#sheet-title"), "100%", "10%"],
       () => [$(".mem-story"), "96%", "100%"],
-      () => [$(".mem-meta"), "100%", "50%"],
+      () => [$(".mem-place"), "100%", "50%"],
       () => [$("#photos .polaroid"), "8%", "6%"],
       () => [$(".mem-story"), "2%", "-6px"],
     ];
@@ -266,7 +418,7 @@
       fly.remove(); el.remove();
       const p = $("#pouch-btn"); p.classList.remove("bump"); void p.offsetWidth; p.classList.add("bump");
       refresh();
-      const left = M.length - state.letters.length;
+      const left = N - state.letters.length;
       toast(left ? `A golden "${el.textContent}"! ${left} to go.` : "That's every letter. The chest is rattling…");
     };
   }
@@ -279,12 +431,18 @@
     current = -1;
     if (!fromPop && history.state && history.state.sheet) history.back();
   }
+  // next / back close the card, drive to the next pin, then open it
+  function hop(delta) {
+    if (current < 0 || driving) return;
+    const target = current + delta;
+    closeSheet();
+    setTimeout(() => goTo(target), 380);
+  }
   sheet.querySelectorAll("[data-close]").forEach((el) => el.addEventListener("click", () => closeSheet()));
-  $("#prev-btn").addEventListener("click", () => current > 0 && openMemory(current - 1));
-  $("#next-btn").addEventListener("click", () => current < M.length - 1 && openMemory(current + 1));
+  $("#prev-btn").addEventListener("click", () => current > 0 && hop(-1));
+  $("#next-btn").addEventListener("click", () => hop(1));
   window.addEventListener("popstate", () => { closeSheet(true); closeModal(); });
 
-  // swipe down on the handle area to close
   let sy = null;
   $(".sheet-panel").addEventListener("touchstart", (e) => {
     sy = $("#sheet-scroll").scrollTop <= 0 ? e.touches[0].clientY : null;
@@ -305,34 +463,36 @@
   modal.querySelectorAll("[data-mclose]").forEach((el) => el.addEventListener("click", closeModal));
 
   const tilesHTML = () => {
-    const got = state.letters.map((i) => norm(M[i].letter));
+    // shown in a fixed scrambled order, so she still has to unscramble them
+    const order = M.map((_, k) => k).sort((a, b) => ((a * 7 + 3) % 11) - ((b * 7 + 3) % 11));
+    const got = order.filter((i) => state.letters.includes(i)).map((i) => norm(M[i].letter));
     return `<div class="tiles">${M.map((_, k) => got[k] ? `<span class="tile got">${got[k]}</span>` : `<span class="tile empty">?</span>`).join("")}</div>`;
   };
 
   $("#pouch-btn").addEventListener("click", () => {
-    const n = M.length, g = state.letters.length;
+    const g = state.letters.length;
     openModal(`
-      <svg class="modal-icon"><use href="#d-pouch" /></svg>
+      <svg class="modal-icon pouch" viewBox="0 0 64 64"><use href="#d-pouch" /></svg>
       <h2>Your golden letters</h2>
       ${tilesHTML()}
-      <p class="muted">${g === n ? "All found! Head to the treasure." : `${g} of ${n}. Every memory hides one. Look closely.`}</p>`);
+      <p class="muted">${g === N ? "All found! Drive to the treasure." : `${g} of ${N}. Every memory hides one. Look closely.`}</p>`);
   });
 
   /* =================== CHEST =================== */
   function openChest() {
-    const n = M.length, g = state.letters.length;
-    if (g < n) {
+    const g = state.letters.length;
+    if (g < N) {
       openModal(`
-        <svg class="modal-icon" viewBox="0 0 64 64" style="fill:#b27a3f"><use href="#d-chest" /></svg>
+        <svg class="modal-icon" viewBox="0 0 64 64"><use href="#d-chest" /></svg>
         <h2>${esc(S.chest.title)}</h2>
         <p>${esc(S.chest.lockedText)}</p>
         ${tilesHTML()}
-        <p class="muted">${n - g} letter${n - g === 1 ? "" : "s"} still hiding.</p>`);
+        <p class="muted">${N - g} letter${N - g === 1 ? "" : "s"} still hiding.</p>`);
       return;
     }
     openModal(`
-      <svg class="modal-icon" viewBox="0 0 64 64" style="fill:#b27a3f"><use href="#d-chest" /></svg>
-      <h2>Speak the password</h2>
+      <svg class="modal-icon" viewBox="0 0 64 64"><use href="#d-chest" /></svg>
+      <h2>Say the password</h2>
       ${tilesHTML()}
       <p class="muted">${esc(S.chest.hint)}</p>
       <form id="pw-form" autocomplete="off">
@@ -353,15 +513,13 @@
   function showFinale() {
     const f = S.finale;
     $("#finale-inner").innerHTML = `
-      <svg class="chest-open" viewBox="0 0 64 64"><use href="#d-chest" /></svg>
+      <svg class="chest-open" viewBox="0 0 64 64"></svg>
       <h2>${esc(f.title)}</h2>
       ${f.photo ? `<figure class="polaroid"><span class="tape"></span><img src="${esc(f.photo)}" alt=""><figcaption></figcaption></figure>` : ""}
       <div class="msg">${paras(f.message)}</div>
       <p class="sig">${esc(f.signature)}</p>
       <button class="btn" id="finale-back">Back to the map</button>`;
-    // <use> can't be animated per-instance, so inline the chest for the lid animation
-    const sym = $("#d-chest").cloneNode(true);
-    $("#finale-inner .chest-open").innerHTML = sym.innerHTML;
+    $("#finale-inner .chest-open").innerHTML = $("#d-chest").innerHTML;
     $("#finale").hidden = false;
     $("#finale").scrollTop = 0;
     document.body.style.overflow = "hidden";
@@ -370,50 +528,6 @@
     $("#finale-back").addEventListener("click", () => {
       $("#finale").hidden = true; document.body.style.overflow = "";
     });
-  }
-
-  /* =================== EASTER EGGS =================== */
-  // 1) Compass: tap 4 times (once per year) within a few seconds
-  let spins = 0, spinTimer;
-  function spinCompass() {
-    spins++;
-    const c = $("#compass");
-    c.style.transform = `rotate(${spins * 360 + (spins % 2 ? 20 : -20)}deg)`;
-    buzz(10);
-    clearTimeout(spinTimer);
-    if (spins >= 4) {
-      setTimeout(() => {
-        openModal(`<p class="muted">year one · two · three · four</p><h2>${esc(S.secrets.compass.title)}</h2>${paras(S.secrets.compass.message)}`);
-        confetti(60);
-      }, 800);
-      spins = 0;
-      setTimeout(() => (c.style.transform = ""), 900);
-    } else {
-      spinTimer = setTimeout(() => { spins = 0; c.style.transform = ""; }, 3000);
-    }
-  }
-
-  // 2) Doodles: each tap wiggles and reveals the next inside joke
-  function tapDoodle(b) {
-    b.classList.remove("wiggle"); void b.offsetWidth; b.classList.add("wiggle");
-    buzz(10);
-    const list = S.secrets.doodles || [];
-    if (!list.length) return;
-    toast(list[doodleSecretIdx % list.length]);
-    doodleSecretIdx++;
-  }
-
-  // 3) Message in a bottle washes up once every memory has been opened
-  function addBottle() {
-    const { W, chest } = geom;
-    const b = document.createElement("button");
-    b.className = "bottle"; b.id = "bottle";
-    b.setAttribute("aria-label", "A message in a bottle");
-    b.style.left = W * 0.17 + "px"; b.style.top = chest.y - 120 + "px";
-    b.innerHTML = `<svg viewBox="0 0 64 64"><use href="#d-bottle" /></svg>`;
-    b.addEventListener("click", () => openModal(`<svg class="modal-icon" viewBox="0 0 64 64"><use href="#d-bottle" /></svg><h2>${esc(S.secrets.bottle.title)}</h2>${paras(S.secrets.bottle.message)}`));
-    $("#map-canvas").appendChild(b);
-    toast("Something just washed up near the treasure…");
   }
 
   /* =================== TOAST =================== */
@@ -427,16 +541,16 @@
   }
 
   /* =================== CONFETTI =================== */
-  function confetti(count = 160) {
+  function confetti(count = 170) {
     const cv = $("#confetti"), ctx = cv.getContext("2d");
     const dpr = window.devicePixelRatio || 1;
-    cv.width = innerWidth * dpr; cv.height = innerHeight * dpr; ctx.scale(dpr, dpr);
-    const colors = ["#e8b64a", "#c8952f", "#b8392d", "#f2e3c0", "#6f9aa0", "#fffaf0"];
+    cv.width = innerWidth * dpr; cv.height = innerHeight * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const colors = ["#ffc44d", "#ff6f59", "#8cc07c", "#8fd0ee", "#3a2f5c", "#ff9fb4"];
     const bits = Array.from({ length: count }, () => ({
       x: innerWidth / 2 + (Math.random() - 0.5) * 80, y: innerHeight * 0.35,
       vx: (Math.random() - 0.5) * 12, vy: -Math.random() * 13 - 4,
       r: Math.random() * 6 + 4, a: Math.random() * 6, va: (Math.random() - 0.5) * 0.3,
-      c: colors[(Math.random() * colors.length) | 0], heart: Math.random() < 0.18,
+      c: colors[(Math.random() * colors.length) | 0], heart: Math.random() < 0.2,
     }));
     const t0 = performance.now();
     (function frame(t) {
@@ -450,21 +564,6 @@
       });
       if (t - t0 < 4000) requestAnimationFrame(frame); else ctx.clearRect(0, 0, innerWidth, innerHeight);
     })(t0);
-  }
-
-  /* =================== ART =================== */
-  function compassSVG() {
-    return `<svg viewBox="0 0 100 100" aria-hidden="true">
-      <circle cx="50" cy="50" r="44" fill="none" stroke="#6b5236" stroke-width="1.5"/>
-      <circle cx="50" cy="50" r="38" fill="none" stroke="#6b5236" stroke-width=".8" stroke-dasharray="2 3"/>
-      <path d="M50 8 L57 50 L50 92 L43 50 Z" fill="#f2e3c0" stroke="#3a2817" stroke-width="1.4"/>
-      <path d="M50 8 L57 50 L50 50 Z M50 92 L43 50 L50 50 Z" fill="#3a2817"/>
-      <path d="M8 50 L50 43 L92 50 L50 57 Z" fill="#f2e3c0" stroke="#3a2817" stroke-width="1.4"/>
-      <path d="M92 50 L50 57 L50 50 Z M8 50 L50 43 L50 50 Z" fill="#3a2817"/>
-      <path d="M50 8 L57 50 L50 50 Z" fill="#b8392d"/>
-      <circle cx="50" cy="50" r="4" fill="#c8952f" stroke="#3a2817"/>
-      <text x="50" y="6" text-anchor="middle" font-family="IM Fell English SC, serif" font-size="11" fill="#3a2817">N</text>
-    </svg>`;
   }
 
   function mulberry(a) {
