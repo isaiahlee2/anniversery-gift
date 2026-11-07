@@ -53,6 +53,7 @@
   $("#intro-title").textContent = S.intro.title;
   $("#intro-sub").textContent = S.intro.subtitle;
   $("#intro-note").innerHTML = paras(S.intro.note);
+  $("#intro-how").textContent = S.intro.howTo || "";
   $("#begin-btn").textContent = S.intro.button;
   $("#seal-text").textContent = S.sealInitials;
   document.title = S.intro.title;
@@ -79,28 +80,96 @@
   let driving = false;
   let facing = 1;        // 1 = driving forward along the road, -1 = backward
 
+  // Silver 4-door sedan, roughly a 2006 Accord: tinted windows, black rims.
+  const WHEEL = (cx) => `<g class="wheel">
+        <circle cx="${cx}" cy="37" r="9.6" fill="#34303b"/>
+        <circle cx="${cx}" cy="37" r="6.3" fill="#141418" stroke="#6d717b" stroke-width=".9"/>
+        <path d="M${cx},31.4 V37 M${cx - 5.3},35.3 L${cx},37 M${cx + 5.3},35.3 L${cx},37 M${cx - 3.3},41.5 L${cx},37 M${cx + 3.3},41.5 L${cx},37" stroke="#4b4e57" stroke-width="1.7" stroke-linecap="round"/>
+        <circle cx="${cx}" cy="37" r="1.4" fill="#8d929c"/></g>`;
   const CAR_SVG = `
     <svg viewBox="0 0 120 50" aria-hidden="true">
       <ellipse cx="60" cy="47" rx="50" ry="3.5" fill="rgba(43,32,70,.2)"/>
       <g class="car-body">
         <path class="paint" stroke="#3b2c45" stroke-width="2.2" stroke-linejoin="round"
-          d="M7,35 L6,27 Q6,23 10,22 L31,19.5 Q39,9 53,8 L73,8 Q83,8.5 91,18.5 L109,21.5 Q115,22.5 115.5,27 L116,33 Q116,37 112,37 L103,37 A11,11 0 0 0 81,37 L39,37 A11,11 0 0 0 17,37 L10,37 Q7,37 7,35 Z"/>
-        <path d="M14,25 Q60,20.5 106,24.5" fill="none" stroke="rgba(255,255,255,.55)" stroke-width="2" stroke-linecap="round"/>
-        <path d="M39,33 L81,33" stroke="rgba(43,32,70,.35)" stroke-width="2.5" stroke-linecap="round"/>
-        <path d="M35,19.5 Q41,11.5 53,10.5 L59.5,10.5 L59.5,19.5 Z" fill="#bfe6f5" stroke="#3b2c45" stroke-width="1.8" stroke-linejoin="round"/>
-        <path d="M62.5,10.5 L72,10.5 Q81,11 87.5,19.5 L62.5,19.5 Z" fill="#bfe6f5" stroke="#3b2c45" stroke-width="1.8" stroke-linejoin="round"/>
-        <path d="M41,18 L47,12 M66,18 L71,12.5" stroke="#fff" stroke-width="2" stroke-linecap="round" opacity=".8"/>
-        <path d="M61,20.5 L61,34.5" stroke="#3b2c45" stroke-width="1.6"/>
-        <rect x="50" y="22.5" width="6" height="2" rx="1" fill="#3b2c45"/>
-        <rect x="74" y="22.5" width="6" height="2" rx="1" fill="#3b2c45"/>
-        <path d="M86.5,18.5 L90,15.5 L92.5,18.8 Z" fill="#3b2c45"/>
-        <path d="M109.5,23.2 Q114.6,23.8 115.2,27.4 L108.8,27.2 Z" fill="#fff6c2" stroke="#3b2c45" stroke-width="1.2"/>
-        <path d="M6.4,24 L11.4,23.2 L11.4,28.4 L6.5,28.4 Z" fill="#ff5a4a" stroke="#3b2c45" stroke-width="1.2"/>
-        <path d="M112,31 L116,31" stroke="#3b2c45" stroke-width="1.4"/>
+          d="M7,35 L6.2,26.5 Q6.4,22.4 10.5,21.6 L31,19.3 Q39,9 53,8 L73,8 Q83,8.6 91,18.6 L108.5,21.3 Q115.2,22.6 115.8,27.2 L116.2,33 Q116.2,37 112.2,37 L103,37 A11,11 0 0 0 81,37 L39,37 A11,11 0 0 0 17,37 L10,37 Q7,37 7,35 Z"/>
+        <path d="M13,25.5 Q60,21 106,24.8" fill="none" stroke="rgba(255,255,255,.6)" stroke-width="2" stroke-linecap="round"/>
+        <path d="M39,33.2 L81,33.2" stroke="rgba(43,32,70,.3)" stroke-width="2.4" stroke-linecap="round"/>
+        <path d="M35,19.4 Q41,11.4 53,10.4 L59.4,10.4 L59.4,19.4 Z" fill="#23262e" stroke="#3b2c45" stroke-width="1.8" stroke-linejoin="round"/>
+        <path d="M62.6,10.4 L72,10.4 Q81,11 87.6,19.4 L62.6,19.4 Z" fill="#23262e" stroke="#3b2c45" stroke-width="1.8" stroke-linejoin="round"/>
+        <path d="M42,17.6 L48,11.8 M45.5,18.2 L50.5,13.2 M67,17.8 L72.5,11.8" stroke="rgba(255,255,255,.28)" stroke-width="1.8" stroke-linecap="round"/>
+        <path d="M34,20.6 L88,20.6" stroke="#eef1f5" stroke-width="1.3" stroke-linecap="round"/>
+        <path d="M61,21.2 L61,34.6" stroke="#3b2c45" stroke-width="1.5"/>
+        <rect x="50" y="23" width="6" height="1.9" rx=".9" fill="#eef1f5" stroke="#3b2c45" stroke-width=".7"/>
+        <rect x="74" y="23" width="6" height="1.9" rx=".9" fill="#eef1f5" stroke="#3b2c45" stroke-width=".7"/>
+        <path d="M86.4,18.6 L90.2,15.4 L92.8,18.9 Z" fill="#2b2b33"/>
+        <path d="M102.5,22.4 L109.5,22.9 Q114.8,23.8 115.5,27.2 L110.2,27.6 Q105.5,26.2 102.5,22.4 Z" fill="#fff7cc" stroke="#3b2c45" stroke-width="1.2" stroke-linejoin="round"/>
+        <path d="M110.5,28.8 L116,28.8 L116.1,31.4 L111,31.4 Z" fill="#cfd5dc" stroke="#3b2c45" stroke-width="1"/>
+        <path d="M6.3,23.4 L13.5,22.4 Q14.4,25.2 13.4,28.6 L6.5,28.6 Z" fill="#e8392f" stroke="#3b2c45" stroke-width="1.2" stroke-linejoin="round"/>
+        <path d="M7,26 L13.2,25.6" stroke="#ffb3a8" stroke-width="1"/>
+        <path d="M7.4,31.6 L14,31.6 M104,33.4 L115.4,33.4" stroke="#3b2c45" stroke-width="1.2" stroke-linecap="round" opacity=".55"/>
       </g>
-      <g class="wheel"><circle cx="28" cy="37" r="9.5" fill="#2e2638"/><circle cx="28" cy="37" r="5.6" fill="#dde1e7"/><path d="M28,32.6 V41.4 M23.6,37 H32.4" stroke="#8f95a1" stroke-width="1.6"/></g>
-      <g class="wheel"><circle cx="92" cy="37" r="9.5" fill="#2e2638"/><circle cx="92" cy="37" r="5.6" fill="#dde1e7"/><path d="M92,32.6 V41.4 M87.6,37 H96.4" stroke="#8f95a1" stroke-width="1.6"/></g>
+      ${WHEEL(28)}
+      ${WHEEL(92)}
     </svg>`;
+
+  // little drawings next to each pin (pick one per memory with `landmark` in content.js)
+  const LANDMARKS = {
+    cookie: `<rect x="13" y="36" width="54" height="34" rx="3" fill="#fff7ea"/>
+      <path d="M8,36 L72,36 L67,25 L13,25 Z" fill="#ff9fb4"/>
+      <path d="M24,25.5 L21.5,35.5 M35,25.5 L34,35.5 M46,25.5 L46.5,35.5 M57,25.5 L59,35.5" stroke="#fff" stroke-width="3.4" fill="none"/>
+      <path d="M8,36 L72,36 L67,25 L13,25 Z" fill="none"/>
+      <rect x="34" y="49" width="12" height="21" rx="2" fill="#ffc44d"/>
+      <rect x="18" y="43" width="11" height="11" rx="2" fill="#bfe6f5"/><rect x="51" y="43" width="11" height="11" rx="2" fill="#bfe6f5"/>
+      <circle cx="40" cy="13" r="11" fill="#e8a95d"/>
+      <circle cx="36" cy="10" r="1.8" fill="#3b2c45" stroke="none"/><circle cx="43" cy="12" r="1.8" fill="#3b2c45" stroke="none"/><circle cx="38" cy="17" r="1.8" fill="#3b2c45" stroke="none"/><circle cx="45" cy="17.5" r="1.4" fill="#3b2c45" stroke="none"/>`,
+    moon: `<circle cx="40" cy="40" r="31" fill="#3a2f5c"/>
+      <path d="M46,20 A18,18 0 1 0 54,52 A14,14 0 1 1 46,20 Z" fill="#ffe08a"/>
+      <path d="M24,26 l1.6,3.4 3.6,.5 -2.6,2.5 .6,3.6 -3.2,-1.7 -3.2,1.7 .6,-3.6 -2.6,-2.5 3.6,-.5 z" fill="#fff" stroke="none"/>
+      <circle cx="58" cy="28" r="1.8" fill="#fff" stroke="none"/><circle cx="22" cy="52" r="1.4" fill="#fff" stroke="none"/><circle cx="33" cy="60" r="1.2" fill="#fff" stroke="none"/>
+      <path d="M57,53 l1.2,2.6 2.8,.4 -2,1.9 .5,2.8 -2.5,-1.3 -2.5,1.3 .5,-2.8 -2,-1.9 2.8,-.4 z" fill="#ffc44d" stroke="none"/>`,
+    disco: `<path d="M40,4 V18" stroke-width="2"/>
+      <circle cx="40" cy="42" r="24" fill="#d9dee6"/>
+      <path d="M17,42 H63 M19,31 H61 M19,53 H61 M26,22 H54 M26,62 H54" stroke-width="1.3" opacity=".6"/>
+      <path d="M40,18 V66 M28,21 Q22,42 28,63 M52,21 Q58,42 52,63" stroke-width="1.3" opacity=".6"/>
+      <rect x="29" y="27" width="8" height="7" fill="#fff" stroke="none"/><rect x="43" y="45" width="8" height="7" fill="#8fd0ee" stroke="none"/><rect x="31" y="47" width="7" height="6" fill="#ff9fb4" stroke="none"/>
+      <path d="M68,18 l2,5 5,2 -5,2 -2,5 -2,-5 -5,-2 5,-2 z M12,58 l1.5,4 4,1.5 -4,1.5 -1.5,4 -1.5,-4 -4,-1.5 4,-1.5 z" fill="#ffc44d"/>`,
+    tent: `<path d="M58,70 L70,70 L64,46 Z M56,62 L72,62 L64,36 Z" fill="#5c9c5c"/>
+      <path d="M6,68 L30,24 L54,68 Z" fill="#ff8a5c"/>
+      <path d="M30,24 L30,68 M22,68 L30,48 L38,68" fill="#c9553a"/>
+      <path d="M26,20 L30,24 L34,20" fill="none"/>
+      <path d="M44,74 L56,70 M44,70 L56,74" stroke="#8a6a4f" stroke-width="3"/>
+      <path d="M50,70 C44,64 48,58 50,54 C52,58 57,63 50,70 Z" fill="#ffc44d"/>
+      <path d="M50,69 C47,66 49,63 50,61 C51,63 53,66 50,69 Z" fill="#ff6f59" stroke="none"/>`,
+    bouquet: `<path d="M30,46 L40,74 L50,46 Z" fill="#fff7ea"/>
+      <path d="M33,62 Q40,57 47,62 L44,66 L40,62 L36,66 Z" fill="#8fd0ee"/>
+      <circle cx="40" cy="26" r="9" fill="#6f7ff0"/><circle cx="27" cy="34" r="8" fill="#fff"/><circle cx="53" cy="34" r="8" fill="#8fd0ee"/>
+      <circle cx="33" cy="20" r="7" fill="#fff"/><circle cx="49" cy="20" r="7" fill="#6f7ff0"/><circle cx="40" cy="42" r="8" fill="#ffe08a"/>
+      <circle cx="40" cy="26" r="2.6" fill="#ffe08a" stroke="none"/><circle cx="53" cy="34" r="2.2" fill="#fff" stroke="none"/><circle cx="49" cy="20" r="2.2" fill="#ffe08a" stroke="none"/>`,
+    campus: `<rect x="8" y="34" width="54" height="36" fill="#d9774f"/>
+      <rect x="27" y="12" width="16" height="22" fill="#d9774f"/>
+      <path d="M25,12 L35,3 L45,12 Z" fill="#5f5870"/>
+      <circle cx="35" cy="22" r="5" fill="#fff7ea"/><path d="M35,19 V22 L37,23.5" stroke-width="1.4"/>
+      <path d="M5,34 L65,34" stroke-width="3"/>
+      <rect x="14" y="41" width="8" height="10" fill="#bfe6f5"/><rect x="31" y="41" width="8" height="10" fill="#bfe6f5"/><rect x="48" y="41" width="8" height="10" fill="#bfe6f5"/>
+      <rect x="30" y="56" width="10" height="14" fill="#8a6a4f"/>
+      <rect x="54" y="56" width="18" height="14" fill="#e8c38f"/><path d="M54,61 H72 M63,56 V61" stroke-width="1.4"/>
+      <path d="M43,12 V0 M43,1 L58,5 L43,9" fill="#ff6f59"/>`,
+    stage: `<path d="M6,6 L22,6 L34,52 L4,52 Z" fill="rgba(255,224,138,.45)" stroke="none"/>
+      <path d="M74,6 L58,6 L46,52 L76,52 Z" fill="rgba(255,159,180,.45)" stroke="none"/>
+      <rect x="6" y="2" width="16" height="8" rx="2" fill="#5f5870"/><rect x="58" y="2" width="16" height="8" rx="2" fill="#5f5870"/>
+      <rect x="2" y="56" width="76" height="16" rx="2" fill="#3a2f5c"/>
+      <path d="M2,56 H78" stroke="#ffc44d" stroke-width="2.5"/>
+      <path d="M40,56 V32 M33,56 L40,50 L47,56" stroke-width="2"/>
+      <rect x="36.5" y="24" width="7" height="10" rx="3.5" fill="#cfd5dc"/>
+      <path d="M58,24 V14 L64,12 V22 M58,24 a3,2.4 0 1 1 -.1,0 M64,22 a3,2.4 0 1 1 -.1,0" fill="#ff6f59"/>
+      <path d="M18,30 V20 M18,30 a3,2.4 0 1 1 -.1,0" fill="#ff6f59"/>`,
+    sunset: `<circle cx="40" cy="44" r="22" fill="#ffc44d"/>
+      <rect x="2" y="44" width="76" height="30" rx="4" fill="#ff8a6c" stroke="none"/>
+      <path d="M2,44 H78" stroke-width="2.4"/>
+      <path d="M10,52 H30 M42,52 H70 M16,60 H38 M48,60 H64 M24,68 H54" stroke="#fff" stroke-width="2.4" opacity=".8"/>
+      <path d="M40,14 V6 M22,22 L17,17 M58,22 L63,17 M14,36 H7 M66,36 H73" stroke="#ffc44d" stroke-width="3"/>
+      <path d="M40,34 c-3,-5 -10,-2 -6,4 l6,6 6,-6 c4,-6 -3,-9 -6,-4 z" fill="#ff6f59" stroke-width="1.6"/>`,
+  };
 
   function smoothPath(p) {
     let d = `M${p[0].x.toFixed(1)},${p[0].y.toFixed(1)}`;
@@ -153,6 +222,11 @@
           <span class="pin-check">✓</span>
           <span class="pin-label">${esc(m.title)}<small>${esc(m.date)}</small></span>
         </button>`;
+      if (LANDMARKS[m.landmark]) {
+        const lx = clamp(p.x + (p.x < W / 2 ? -68 : 68), 40, W - 40);
+        html += `<div class="landmark" style="left:${lx - 38}px;top:${p.y - 22}px;animation-delay:${(i * 0.37).toFixed(2)}s" aria-hidden="true">
+          <svg viewBox="-4 -4 88 88">${LANDMARKS[m.landmark]}</svg></div>`;
+      }
     });
 
     html += `
@@ -190,6 +264,7 @@
     const rnd = mulberry(11);
     const avoid = [
       ...pts.map((p) => ({ x: p.x, y: p.y - 60, r: 62 })),
+      ...pts.map((p) => ({ x: clamp(p.x + (p.x < W / 2 ? -68 : 68), 40, W - 40), y: p.y + 16, r: 46 })), // landmarks
       ...pts.map((p) => ({ x: p.x + (p.x < W / 2 ? 150 : -150), y: p.y - 70, r: 75 })), // labels
       { x: chest.x, y: chest.y - 10, r: 120 },
       { x: start.x + 95, y: start.y - 30, r: 60 },

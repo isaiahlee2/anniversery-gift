@@ -19,9 +19,9 @@ window.SITE = {
     title: "A Map of Us",
     subtitle: "Four years of adventures",
     // Short note she reads before the map. Blank line = new paragraph.
-    note:
-      "TODO: a short note from you goes here.\n\n" +
-      "Every pin on this map is a memory. Tap one and we'll drive there. Hidden somewhere inside each memory is a tiny golden letter — collect all 8 to open the treasure at the end.",
+    note: "Loving you for 4 years and memories for a lifetime",
+    // small "how to play" line under the note
+    howTo: "Tap a pin and we'll drive there. Each memory hides a tiny golden letter. Find all 8 to unlock the treasure at the end.",
     button: "Start the car",
   },
 
@@ -34,12 +34,15 @@ window.SITE = {
          ]
        Leave photos: [] and a placeholder polaroid shows instead.
      - story: blank line = new paragraph.
+     - landmark: the drawing beside the pin — cookie, moon, disco, tent,
+       bouquet, campus, stage or sunset.
      - letter: the golden letter hidden in this memory. All the letters
        together must be the letters of `password` below (any order).
      ---------------------------------------------------------------- */
   memories: [
     {
       title: "Where It Started",
+      landmark: "cookie", // little drawing next to the pin
       date: "August 2022",
       place: "Crumbl",
       photos: [{ src: "crumbl.jpg", caption: "" }],
@@ -49,6 +52,7 @@ window.SITE = {
     },
     {
       title: "All Night in the Car",
+      landmark: "moon", // little drawing next to the pin
       date: "September 2022",
       place: "",
       photos: [{ src: "car-night.jpg", caption: "" }],
@@ -58,6 +62,7 @@ window.SITE = {
     },
     {
       title: "My Prom",
+      landmark: "disco", // little drawing next to the pin
       date: "June 2023",
       place: "",
       photos: [{ src: "my-prom.jpg", caption: "" }],
@@ -66,6 +71,7 @@ window.SITE = {
     },
     {
       title: "Camping with Your Parents",
+      landmark: "tent", // little drawing next to the pin
       date: "July 2023",
       place: "",
       photos: [{ src: "camping.jpg", caption: "" }],
@@ -74,6 +80,7 @@ window.SITE = {
     },
     {
       title: "Your Prom",
+      landmark: "bouquet", // little drawing next to the pin
       date: "June 2024",
       place: "",
       photos: [{ src: "her-prom.jpg", caption: "" }],
@@ -83,6 +90,7 @@ window.SITE = {
     },
     {
       title: "Off to College, Together",
+      landmark: "campus", // little drawing next to the pin
       date: "October 2024",
       place: "Corvallis",
       photos: [{ src: "corvallis.jpg", caption: "" }],
@@ -92,6 +100,7 @@ window.SITE = {
     },
     {
       title: "Sabrina Carpenter",
+      landmark: "stage", // little drawing next to the pin
       date: "November 2024",
       place: "",
       photos: [{ src: "sabrina.jpg", caption: "" }],
@@ -105,9 +114,17 @@ window.SITE = {
       // {days} in any text is replaced with the live days-together count.
       layout: "collage",
       title: "Sunsets & Selfies",
+      landmark: "sunset", // little drawing next to the pin
       date: "All four years",
       place: "",
-      photos: [],
+      photos: [
+        "sunset-1.jpg",
+        "sunset-2.jpg",
+        "sunset-3.jpg",
+        "sunset-4.jpg",
+        "sunset-5.jpg",
+        "sunset-6.jpg",
+      ],
       story:
         "All the sunsets we got to experience together.\n\n" +
         "The rest of this one is locked in the treasure chest.",

@@ -117,8 +117,11 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 .divider span { width: 8px; height: 8px; border-radius: 50%; background: var(--sun); }
 .divider span:nth-child(2) { background: var(--coral); }
 .divider span:nth-child(3) { background: var(--sage); }
-.scroll-note { text-align: left; }
-.scroll-note p { margin: 0 0 12px; }
+.scroll-note p {
+  margin: 0; text-align: center;
+  font-family: var(--hand); font-weight: 700; font-size: 31px; line-height: 1.12; color: var(--plum);
+}
+.scroll-how { margin: 16px 6px 0; font-size: 14.5px; line-height: 1.45; color: var(--ink-soft); }
 
 .seal {
   position: absolute; left: 50%; top: 50%;
@@ -272,6 +275,15 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 .pin-label small { display: block; font-family: var(--hand); font-weight: 700; font-size: 17px; color: var(--coral); margin-top: 1px; }
 .pin.label-right .pin-label { left: 80px; transform: rotate(1.5deg); }
 .pin.label-left .pin-label { right: 80px; transform: rotate(-1.5deg); text-align: right; }
+
+/* --- landmark drawings beside each pin --- */
+.landmark {
+  position: absolute; z-index: 3; width: 76px; height: 76px; pointer-events: none;
+  filter: drop-shadow(0 5px 6px rgba(58,47,92,.18));
+  animation: floaty 3.2s ease-in-out infinite;
+}
+.landmark svg { width: 100%; height: 100%; overflow: visible; stroke: var(--plum); stroke-width: 2.2; stroke-linejoin: round; stroke-linecap: round; fill: none; }
+@keyframes floaty { 50% { transform: translateY(-4px) rotate(-1.5deg); } }
 
 /* --- chest at the end --- */
 .chest-stop {
@@ -441,12 +453,13 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
   width: 34px; height: 34px; margin: -17px 0 0 -17px;
   font-family: var(--display); font-weight: 700; font-size: 20px; line-height: 34px; text-align: center;
   color: var(--gold);
-  opacity: .5;
+  opacity: .7;
   transform: rotate(-14deg);
-  animation: glint 5s ease-in-out infinite;
+  text-shadow: 0 0 2px #fff, 0 0 3px #fff, 0 0 5px rgba(255,255,255,.9);
+  animation: glint 4s ease-in-out infinite;
 }
 .secret-letter::before { content: ""; position: absolute; inset: -6px; }
-@keyframes glint { 0%, 88%, 100% { opacity: .45; text-shadow: none; } 93% { opacity: .9; text-shadow: 0 0 8px rgba(255, 196, 77, .9); } }
+@keyframes glint { 0%, 86%, 100% { opacity: .7; } 92% { opacity: 1; text-shadow: 0 0 2px #fff, 0 0 10px rgba(255, 196, 77, 1); } }
 .secret-letter.found { animation: letterPop .5s forwards; }
 @keyframes letterPop { 50% { transform: scale(2) rotate(10deg); opacity: 1; color: var(--sun); } 100% { transform: scale(0); opacity: 0; } }
 .flyer {
