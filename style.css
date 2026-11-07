@@ -513,7 +513,7 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 /* ================= FINALE ================= */
 .finale {
   position: fixed; inset: 0; z-index: 70; overflow-y: auto;
-  display: grid; place-items: center; padding: 40px 20px calc(40px + var(--safe-b));
+  display: grid; place-items: center; padding: 40px 20px calc(96px + var(--safe-b));
   background: var(--noise), linear-gradient(180deg, #fff3e0 0%, #ffd9b0 55%, #ffab84 100%);
   animation: fadeIn 1s;
 }
@@ -526,6 +526,19 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 .finale-inner .msg p { margin: 0 0 14px; }
 .finale-inner .sig { font-family: var(--hand); font-weight: 700; font-size: 32px; color: var(--coral); text-align: right; margin: 8px 0 24px; }
 .finale-inner .polaroid { width: 80%; margin: 8px auto 24px; transform: rotate(-2deg); }
+.music-btn {
+  position: fixed; left: 50%; bottom: calc(18px + var(--safe-b)); transform: translateX(-50%); z-index: 75;
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 16px; border-radius: 999px;
+  background: var(--plum); color: #fff;
+  font-family: var(--display); font-weight: 500; font-size: 14px;
+  box-shadow: 0 8px 20px rgba(43,32,70,.3);
+}
+.eq { display: flex; align-items: flex-end; gap: 2px; height: 14px; }
+.eq i { width: 3px; background: var(--sun); border-radius: 2px; animation: eq .9s ease-in-out infinite alternate; }
+.eq i:nth-child(2) { animation-delay: -.3s; } .eq i:nth-child(3) { animation-delay: -.6s; }
+.music-btn.off .eq i { animation: none; height: 4px; }
+@keyframes eq { from { height: 3px; } to { height: 14px; } }
 @keyframes lidOpen { to { transform: rotate(-35deg) translate(-6px, -8px); } }
 @keyframes fadeIn { from { opacity: 0; } }
 

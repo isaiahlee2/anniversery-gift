@@ -21,7 +21,7 @@ window.SITE = {
     // Short note she reads before the map. Blank line = new paragraph.
     note: "Loving you for 4 years and memories for a lifetime",
     // small "how to play" line under the note
-    howTo: "Tap a pin and we'll drive there. Each memory hides a tiny golden letter. Find all 8 to unlock the treasure at the end.",
+    howTo: "Tap a pin and we'll take Dolly there. Each memory hides a tiny golden letter. Find all 8 to unlock the treasure at the end.",
     button: "Start the car",
   },
 
@@ -126,8 +126,7 @@ window.SITE = {
         "sunset-6.jpg",
       ],
       story:
-        "All the sunsets we got to experience together.\n\n" +
-        "The rest of this one is locked in the treasure chest.",
+        "Some pretty sunsets with you. Now it's time to open the chest.",
       letter: "E",
     },
   ],
@@ -151,9 +150,12 @@ window.SITE = {
       "When I see how pretty the sunset is, I think of you.",
     signature: "— Isaiah",
     photo: "", // optional: a favorite sunset pic, e.g. "sunset-1.jpg"
+    // Song that starts when the chest opens. Upload an .mp3 to the repo and put its name here.
+    song: "",       // e.g. "our-song.mp3"
+    songStart: 0,   // seconds into the song to start from (e.g. 45 to jump to the chorus)
   },
 
 
   // The car that drives between stops. Any CSS color works.
-  car: { color: "#c3c9d1" }, // silver
+  car: { name: "Dolly", color: "#c3c9d1" }, // silver
 };

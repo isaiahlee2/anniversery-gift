@@ -206,7 +206,7 @@
         <path class="road" d="${d}"/>
         <path class="road-line" d="${d}"/>
       </svg>
-      <div class="map-hint" style="left:${Math.max(14, W * 0.06)}px;top:96px">tap a pin<br>to drive there
+      <div class="map-hint" style="left:${Math.max(14, W * 0.06)}px;top:96px">tap a pin<br>to take ${esc((S.car && S.car.name) || "the car")} there
         <svg viewBox="0 0 46 30"><path d="M4 4 C14 26, 30 26, 42 18 M42 18 l-8 -1 M42 18 l-3 7"/></svg></div>
       <div class="start-sign" style="left:${start.x + 60}px;top:${start.y - 62}px"><div class="board">START<small>day one</small></div><div class="post"></div></div>`;
 
@@ -575,9 +575,11 @@
         <input class="pw-input" id="pw" maxlength="${norm(S.password).length + 4}" autocapitalize="characters" spellcheck="false" aria-label="Password" />
         <button class="btn" type="submit">Unlock</button>
       </form>`);
+    const song = S.finale.song ? new Audio(S.finale.song) : null;
+    if (song) song.preload = "auto";
     $("#pw-form").addEventListener("submit", (e) => {
       e.preventDefault();
-      if (norm($("#pw").value) === norm(S.password)) { closeModal(); showFinale(); }
+      if (norm($("#pw").value) === norm(S.password)) { playSong(song); closeModal(); showFinale(!!song); }
       else {
         buzz(80);
         const c = $(".modal-card"); c.classList.remove("shake"); void c.offsetWidth; c.classList.add("shake");
@@ -586,7 +588,18 @@
     });
   }
 
-  function showFinale() {
+  let music = null;
+  function playSong(a) {
+    if (!a) return;
+    music = a;
+    try { a.currentTime = S.finale.songStart || 0; } catch (e) {}
+    a.volume = 0;
+    const p = a.play();
+    if (p && p.catch) p.catch(() => {});
+    let v = 0; const fade = setInterval(() => { v = Math.min(1, v + 0.05); try { a.volume = v; } catch (e) {} if (v >= 1) clearInterval(fade); }, 120);
+  }
+
+  function showFinale(withSong) {
     const f = S.finale;
     $("#finale-inner").innerHTML = `
       <svg class="chest-open" viewBox="0 0 64 64"></svg>
@@ -594,7 +607,8 @@
       ${f.photo ? `<figure class="polaroid"><span class="tape"></span><img src="${esc(f.photo)}" alt=""><figcaption></figcaption></figure>` : ""}
       <div class="msg">${paras(f.message)}</div>
       <p class="sig">${esc(f.signature)}</p>
-      <button class="btn" id="finale-back">Back to the map</button>`;
+      <button class="btn" id="finale-back">Back to the map</button>
+      ${withSong ? `<button class="music-btn" id="music-btn" aria-label="Pause the song"><span class="eq"><i></i><i></i><i></i></span><span id="music-label">pause song</span></button>` : ""}`;
     $("#finale-inner .chest-open").innerHTML = $("#d-chest").innerHTML;
     $("#finale").hidden = false;
     $("#finale").scrollTop = 0;
@@ -603,6 +617,14 @@
     setTimeout(() => confetti(), 700);
     $("#finale-back").addEventListener("click", () => {
       $("#finale").hidden = true; document.body.style.overflow = "";
+    });
+    const mb = $("#music-btn");
+    if (mb && music) mb.addEventListener("click", () => {
+      if (music.paused) { music.play().catch(() => {}); } else { music.pause(); }
+      const on = !music.paused;
+      mb.classList.toggle("off", !on);
+      $("#music-label").textContent = on ? "pause song" : "play song";
+      mb.setAttribute("aria-label", on ? "Pause the song" : "Play the song");
     });
   }
 
