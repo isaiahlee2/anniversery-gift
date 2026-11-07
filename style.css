@@ -526,6 +526,9 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 .finale-inner .msg p { margin: 0 0 14px; }
 .finale-inner .sig { font-family: var(--hand); font-weight: 700; font-size: 32px; color: var(--coral); text-align: right; margin: 8px 0 24px; }
 .finale-inner .polaroid { width: 80%; margin: 8px auto 24px; transform: rotate(-2deg); }
+.our-song { margin: 0 0 22px; }
+.our-song p { margin: 0 0 6px; font-family: var(--hand); font-weight: 700; font-size: 22px; color: var(--coral-dark); }
+.our-song iframe { display: block; border: 0; border-radius: 14px; box-shadow: 0 8px 20px rgba(58,47,92,.18); }
 .music-btn {
   position: fixed; left: 50%; bottom: calc(18px + var(--safe-b)); transform: translateX(-50%); z-index: 75;
   display: flex; align-items: center; gap: 8px;

@@ -153,6 +153,8 @@ window.SITE = {
     // Song that starts when the chest opens. Upload an .mp3 to the repo and put its name here.
     song: "",       // e.g. "our-song.mp3"
     songStart: 0,   // seconds into the song to start from (e.g. 45 to jump to the chorus)
+    // If there's no song file, a Spotify player for this link shows on the letter instead (she taps play).
+    spotify: "https://open.spotify.com/track/7JIuqL4ZqkpfGKQhYlrirs", // The Only Exception — Paramore
   },
 
 

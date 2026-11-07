@@ -599,12 +599,18 @@
     let v = 0; const fade = setInterval(() => { v = Math.min(1, v + 0.05); try { a.volume = v; } catch (e) {} if (v >= 1) clearInterval(fade); }, 120);
   }
 
+  const spotifyEmbed = (url = "") => {
+    const m = String(url).match(/open\.spotify\.com\/(?:intl-[a-z]+\/)?(track|album|playlist)\/([A-Za-z0-9]+)/);
+    return m ? `https://open.spotify.com/embed/${m[1]}/${m[2]}?utm_source=generator` : "";
+  };
+
   function showFinale(withSong) {
     const f = S.finale;
     $("#finale-inner").innerHTML = `
       <svg class="chest-open" viewBox="0 0 64 64"></svg>
       <h2>${esc(f.title)}</h2>
       ${f.photo ? `<figure class="polaroid"><span class="tape"></span><img src="${esc(f.photo)}" alt=""><figcaption></figcaption></figure>` : ""}
+      ${!withSong && spotifyEmbed(f.spotify) ? `<div class="our-song"><p>our song — press play</p><iframe src="${spotifyEmbed(f.spotify)}" width="100%" height="152" frameborder="0" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy" title="Our song on Spotify"></iframe></div>` : ""}
       <div class="msg">${paras(f.message)}</div>
       <p class="sig">${esc(f.signature)}</p>
       <button class="btn" id="finale-back">Back to the map</button>
