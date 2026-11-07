@@ -243,7 +243,7 @@
       const L0 = carLen(), L1 = parkLen(k);
       const dir = L1 >= L0 ? 1 : -1;
       facing = dir;
-      if (Math.abs(L1 - L0) < 2 || reduceMotion) {
+      if (Math.abs(L1 - L0) < 2 || reduceMotion || document.hidden) {
         placeCar(L1, dir); state.carAt = k; save(); return resolve();
       }
       driving = true;
@@ -263,7 +263,8 @@
           const m = Math.hypot(hx, hy) || 1;
           puff(p.x - (hx / m) * 46, p.y - (hy / m) * 46 - 4, hx < 0 ? 10 : -10);
         }
-        if (t < 1) return requestAnimationFrame(frame);
+        if (t < 1 && !document.hidden) return requestAnimationFrame(frame);
+        if (t < 1) placeCar(L1, dir);
         car.classList.remove("driving");
         driving = false;
         state.carAt = k; save();
